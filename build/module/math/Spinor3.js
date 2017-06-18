@@ -1,7 +1,34 @@
+import { applyMixins } from './applyMixins';
+import { approx } from './approx';
+import { dotVectorCartesianE3 } from './dotVectorCartesianE3';
+import { lock, LockableMixin as Lockable, TargetLockedError } from './Lockable';
+import { mulSpinorE3YZ } from './mulSpinorE3YZ';
+import { mulSpinorE3ZX } from './mulSpinorE3ZX';
+import { mulSpinorE3XY } from './mulSpinorE3XY';
+import { mulSpinorE3alpha } from './mulSpinorE3alpha';
+import { mustBeInteger } from '../checks/mustBeInteger';
 import { mustBeNumber } from '../checks/mustBeNumber';
 import { randomRange } from './randomRange';
 import { readOnly } from '../i18n/readOnly';
+import { rotorFromDirectionsE3 as rotorFromDirections } from './rotorFromDirectionsE3';
+import { toStringCustom } from './toStringCustom';
 import { Unit } from './Unit';
+import { wedgeXY } from './wedgeXY';
+import { wedgeYZ } from './wedgeYZ';
+import { wedgeZX } from './wedgeZX';
+// Constants for the coordinate indices into the coords array.
+var COORD_YZ = 0;
+var COORD_ZX = 1;
+var COORD_XY = 2;
+var COORD_SCALAR = 3;
+var BASIS_LABELS = ['e23', 'e31', 'e12', '1'];
+/**
+ * Coordinates corresponding to basis labels.
+ */
+function coordinates(m) {
+    return [m.yz, m.zx, m.xy, m.a];
+}
+var magicCode = Math.random();
 /**
  * A mutable representation of a spinor with cartesian coordinates in 3 dimensions.
  */
@@ -9,13 +36,113 @@ var Spinor3 = (function () {
     /**
      *
      */
-    function Spinor3(a, yz, zx, xy, uom) {
-        this.a = mustBeNumber('a', a);
-        this.yz = mustBeNumber('yz', yz);
-        this.zx = mustBeNumber('zx', zx);
-        this.xy = mustBeNumber('xy', xy);
+    function Spinor3(coords, uom, code) {
+        if (code !== magicCode) {
+            throw new Error("Use the static creation methods instead of the constructor");
+        }
+        this.coords_ = coords;
+        this.modified_ = false;
         this.uom = Unit.mustBeUnit('uom', uom);
     }
+    Object.defineProperty(Spinor3.prototype, "modified", {
+        get: function () {
+            return this.modified_;
+        },
+        set: function (modified) {
+            if (this.isLocked()) {
+                throw new TargetLockedError('set modified');
+            }
+            this.modified_ = modified;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Spinor3.prototype, "yz", {
+        /**
+         * The coordinate corresponding to the <b>e</b><sub>23</sub> basis bivector.
+         */
+        get: function () {
+            return this.coords_[COORD_YZ];
+        },
+        set: function (yz) {
+            if (this.isLocked()) {
+                throw new TargetLockedError('set yz');
+            }
+            mustBeNumber('yz', yz);
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_YZ] !== yz;
+            coords[COORD_YZ] = yz;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Spinor3.prototype, "zx", {
+        /**
+         * The coordinate corresponding to the <b>e</b><sub>31</sub> basis bivector.
+         */
+        get: function () {
+            return this.coords_[COORD_ZX];
+        },
+        set: function (zx) {
+            if (this.isLocked()) {
+                throw new TargetLockedError('zx');
+            }
+            mustBeNumber('zx', zx);
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_ZX] !== zx;
+            coords[COORD_ZX] = zx;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Spinor3.prototype, "xy", {
+        /**
+         * The coordinate corresponding to the <b>e</b><sub>12</sub> basis bivector.
+         */
+        get: function () {
+            return this.coords_[COORD_XY];
+        },
+        set: function (xy) {
+            if (this.isLocked()) {
+                throw new TargetLockedError('xy');
+            }
+            mustBeNumber('xy', xy);
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_XY] !== xy;
+            coords[COORD_XY] = xy;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Spinor3.prototype, "a", {
+        /**
+         * The coordinate corresponding to the <b>1</b> basis scalar.
+         */
+        get: function () {
+            return this.coords_[COORD_SCALAR];
+        },
+        set: function (α) {
+            if (this.isLocked()) {
+                throw new TargetLockedError('a');
+            }
+            mustBeNumber('α', α);
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_SCALAR] !== α;
+            coords[COORD_SCALAR] = α;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Spinor3.prototype, "length", {
+        get: function () {
+            return 4;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Spinor3.prototype.getComponent = function (index) {
+        return this.coords_[index];
+    };
     Object.defineProperty(Spinor3.prototype, "maskG3", {
         /**
          *
@@ -41,6 +168,35 @@ var Spinor3 = (function () {
         configurable: true
     });
     /**
+     * this ⟼ this + α
+     *
+     * @param α
+     * @returns this + α
+     */
+    Spinor3.prototype.addScalar = function (α, uom) {
+        mustBeNumber('α', α);
+        this.a += α;
+        return this;
+    };
+    Spinor3.prototype.arg = function () {
+        if (this.isLocked()) {
+            return lock(this.clone().arg());
+        }
+        else {
+            return this.log().grade(2);
+        }
+    };
+    Spinor3.prototype.approx = function (n) {
+        approx(this.coords_, n);
+        return this;
+    };
+    /**
+     * Returns an unlocked (mutable) copy of `this`.
+     */
+    Spinor3.prototype.clone = function () {
+        return Spinor3.spinor(this.yz, this.zx, this.xy, this.a);
+    };
+    /**
      *
      */
     Spinor3.prototype.copy = function (spinor) {
@@ -62,17 +218,143 @@ var Spinor3 = (function () {
         }
         return this;
     };
+    Spinor3.prototype.dual = function (v, changeSign) {
+        this.a = 0;
+        this.yz = v.x;
+        this.zx = v.y;
+        this.xy = v.z;
+        if (changeSign) {
+            this.neg();
+        }
+        return this;
+    };
+    /**
+     * <code>this ⟼ e<sup>this</sup></code>
+     *
+     * @returns exp(this)
+     */
+    Spinor3.prototype.exp = function () {
+        var w = this.a;
+        var x = this.yz;
+        var y = this.zx;
+        var z = this.xy;
+        var expW = Math.exp(w);
+        // φ is actually the absolute value of one half the rotation angle.
+        // The orientation of the rotation gets carried in the bivector components.
+        // FIXME: DRY
+        var φ = Math.sqrt(x * x + y * y + z * z);
+        var s = expW * (φ !== 0 ? Math.sin(φ) / φ : 1);
+        this.a = expW * Math.cos(φ);
+        this.yz = x * s;
+        this.zx = y * s;
+        this.xy = z * s;
+        return this;
+    };
+    Spinor3.prototype.grade = function (grade) {
+        mustBeInteger('grade', grade);
+        switch (grade) {
+            case 0: {
+                this.yz = 0;
+                this.zx = 0;
+                this.xy = 0;
+                break;
+            }
+            case 2: {
+                this.a = 0;
+                break;
+            }
+            default: {
+                this.a = 0;
+                this.yz = 0;
+                this.zx = 0;
+                this.xy = 0;
+            }
+        }
+        return this;
+    };
     /**
      *
      */
     Spinor3.prototype.isOne = function () {
         return this.a === 1 && this.xy === 0 && this.yz === 0 && this.zx === 0;
     };
+    Spinor3.prototype.isZero = function () {
+        return this.a === 0 && this.xy === 0 && this.yz === 0 && this.zx === 0;
+    };
+    Spinor3.prototype.log = function () {
+        // FIXME: Wrong
+        var w = this.a;
+        var x = this.yz;
+        var y = this.zx;
+        var z = this.xy;
+        // FIXME: DRY
+        var bb = x * x + y * y + z * z;
+        var Vector2 = Math.sqrt(bb);
+        var R0 = Math.abs(w);
+        var R = Math.sqrt(w * w + bb);
+        this.a = Math.log(R);
+        var θ = Math.atan2(Vector2, R0) / Vector2;
+        // The angle, θ, produced by atan2 will be in the range [-π, +π]
+        this.yz = x * θ;
+        this.zx = y * θ;
+        this.xy = z * θ;
+        return this;
+    };
     /**
      *
      */
     Spinor3.prototype.magnitude = function () {
         return Math.sqrt(this.quaditude());
+    };
+    /**
+     * <p>
+     * <code>this ⟼ this * rhs</code>
+     * </p>
+     *
+     * @method mul
+     * @param rhs {SpinorE3}
+     * @return {Spinor3} <code>this</code>
+     * @chainable
+     */
+    Spinor3.prototype.mul = function (rhs) {
+        var α = mulSpinorE3alpha(this, rhs);
+        var yz = mulSpinorE3YZ(this, rhs);
+        var zx = mulSpinorE3ZX(this, rhs);
+        var xy = mulSpinorE3XY(this, rhs);
+        this.a = α;
+        this.yz = yz;
+        this.zx = zx;
+        this.xy = xy;
+        return this;
+    };
+    /**
+     * <p>
+     * <code>this ⟼ a * b</code>
+     * </p>
+     *
+     * @method mul2
+     * @param a {SpinorE3}
+     * @param b {SpinorE3}
+     * @return {Spinor3} <code>this</code>
+     * @chainable
+     */
+    Spinor3.prototype.mul2 = function (a, b) {
+        var α = mulSpinorE3alpha(a, b);
+        var yz = mulSpinorE3YZ(a, b);
+        var zx = mulSpinorE3ZX(a, b);
+        var xy = mulSpinorE3XY(a, b);
+        this.a = α;
+        this.yz = yz;
+        this.zx = zx;
+        this.xy = xy;
+        return this;
+    };
+    Spinor3.prototype.neg = function () {
+        this.a = -this.a;
+        this.yz = -this.yz;
+        this.zx = -this.zx;
+        this.xy = -this.xy;
+        return this;
     };
     /**
      *
@@ -116,28 +398,176 @@ var Spinor3 = (function () {
         return this;
     };
     /**
+     * Sets this Spinor to the value of its reflection in the plane orthogonal to n.
+     * The geometric formula for bivector reflection is B' = n * B * n.
      *
+     * @method reflect
+     * @param n {VectorE3}
+     * @return {Spinor3} <code>this</code>
+     * @chainable
      */
+    Spinor3.prototype.reflect = function (n) {
+        var w = this.a;
+        var yz = this.yz;
+        var zx = this.zx;
+        var xy = this.xy;
+        var nx = n.x;
+        var ny = n.y;
+        var nz = n.z;
+        var nn = nx * nx + ny * ny + nz * nz;
+        var nB = nx * yz + ny * zx + nz * xy;
+        this.a = nn * w;
+        this.xy = 2 * nz * nB - nn * xy;
+        this.yz = 2 * nx * nB - nn * yz;
+        this.zx = 2 * ny * nB - nn * zx;
+        return this;
+    };
+    /**
+     * <p>
+     * <code>this = ⟼ R * this * rev(R)</code>
+     * </p>
+     *
+     * @method rotate
+     * @param R {SpinorE3}
+     * @return {Spinor3} <code>this</code>
+     * @chainable
+     */
+    Spinor3.prototype.rotate = function (R) {
+        // R * this * rev(R) = R * rev(R * rev(this));
+        this.rev();
+        this.mul2(R, this);
+        this.rev();
+        this.mul2(R, this);
+        return this;
+    };
+    /**
+     * <p>
+     * Computes a rotor, R, from two vectors, where
+     * R = (abs(b) * abs(a) + b * a) / sqrt(2 * (quad(b) * quad(a) + abs(b) * abs(a) * b << a))
+     * </p>
+     *
+     * @method rotorFromDirections
+     * @param a {VectorE3} The <em>from</em> vector.
+     * @param b {VectorE3} The <em>to</em> vector.
+     * @return {Spinor3} <code>this</code> The rotor representing a rotation from a to b.
+     * @chainable
+     */
+    Spinor3.prototype.rotorFromDirections = function (a, b) {
+        return this.rotorFromVectorToVector(a, b, void 0);
+    };
+    /**
+     * <p>
+     * <code>this = ⟼ exp(- B * θ / 2)</code>
+     * </p>
+     *
+     * @param B The unit bivector that generates the rotation.
+     * @param θ The rotation angle in radians.
+     */
+    Spinor3.prototype.rotorFromGeneratorAngle = function (B, θ) {
+        var φ = θ / 2;
+        var s = Math.sin(φ);
+        this.yz = -B.yz * s;
+        this.zx = -B.zx * s;
+        this.xy = -B.xy * s;
+        this.a = Math.cos(φ);
+        return this;
+    };
+    Spinor3.prototype.rotorFromVectorToVector = function (a, b, B) {
+        rotorFromDirections(a, b, B, this);
+        return this;
+    };
+    /**
+     * <p>
+     * <code>this ⟼ this * α</code>
+     * </p>
+     *
+     * @method scale
+     * @param α {number}
+     * @return {Spinor3} <code>this</code>
+     * @chainable
+     */
+    Spinor3.prototype.scale = function (α) {
+        mustBeNumber('α', α);
+        this.yz *= α;
+        this.zx *= α;
+        this.xy *= α;
+        this.a *= α;
+        return this;
+    };
+    /**
+     * @method stress
+     * @param σ {VectorE3}
+     * @return {Spinor3}
+     * @chainable
+     */
+    Spinor3.prototype.stress = function (σ) {
+        // There is no change to the scalar coordinate, α.
+        this.yz = this.yz * σ.y * σ.z;
+        this.zx = this.zx * σ.z * σ.x;
+        this.xy = this.xy * σ.x * σ.y;
+        return this;
+    };
     Spinor3.prototype.toExponential = function (fractionDigits) {
-        return "new Spinor3(" + this.a.toExponential(fractionDigits) + ", " + this.yz.toExponential(fractionDigits) + ", " + this.zx.toExponential(fractionDigits) + ", " + this.xy.toExponential(fractionDigits) + ")";
+        var coordToString = function (coord) { return coord.toExponential(fractionDigits); };
+        return toStringCustom(coordinates(this), coordToString, BASIS_LABELS, this.uom);
     };
     /**
      *
      */
     Spinor3.prototype.toFixed = function (fractionDigits) {
-        return "new Spinor3(" + this.a.toFixed(fractionDigits) + ", " + this.yz.toFixed(fractionDigits) + ", " + this.zx.toFixed(fractionDigits) + ", " + this.xy.toFixed(fractionDigits) + ")";
+        var coordToString = function (coord) { return coord.toFixed(fractionDigits); };
+        return toStringCustom(coordinates(this), coordToString, BASIS_LABELS, this.uom);
     };
     /**
      *
      */
-    Spinor3.prototype.toPrecision = function (precision) {
-        return "new Spinor3(" + this.a.toPrecision(precision) + ", " + this.yz.toPrecision(precision) + ", " + this.zx.toPrecision(precision) + ", " + this.xy.toPrecision(precision) + ")";
+    Spinor3.prototype.toPrecision = function (position) {
+        var coordToString = function (coord) { return coord.toPrecision(position); };
+        return toStringCustom(coordinates(this), coordToString, BASIS_LABELS, this.uom);
     };
     /**
-     * Returns a string representation of this spinor.
+     * @method toString
+     * @param [radix] {number}
+     * @return {string} A non-normative string representation of the target.
      */
     Spinor3.prototype.toString = function (radix) {
-        return "new Spinor3(" + this.a.toString(radix) + ", " + this.yz.toString(radix) + ", " + this.zx.toString(radix) + ", " + this.xy.toString(radix) + ")";
+        var coordToString = function (coord) { return coord.toString(radix); };
+        return toStringCustom(coordinates(this), coordToString, BASIS_LABELS, this.uom);
+    };
+    /**
+     * <p>
+     * <code>this ⟼ a * b</code>
+     * </p>
+     *
+     * Sets this Spinor3 to the geometric product, a * b, of the vector arguments.
+     *
+     * @param a
+     * @param b
+     */
+    Spinor3.prototype.versor = function (a, b) {
+        var ax = a.x;
+        var ay = a.y;
+        var az = a.z;
+        var bx = b.x;
+        var by = b.y;
+        var bz = b.z;
+        this.a = dotVectorCartesianE3(ax, ay, az, bx, by, bz);
+        this.yz = wedgeYZ(ax, ay, az, bx, by, bz);
+        this.zx = wedgeZX(ax, ay, az, bx, by, bz);
+        this.xy = wedgeXY(ax, ay, az, bx, by, bz);
+        return this;
+    };
+    /**
+     * Sets this spinor to the identity element for addition, <b>0</b>.
+     *
+     * @return {Spinor3} <code>this</code>
+     */
+    Spinor3.prototype.zero = function () {
+        this.a = 0;
+        this.yz = 0;
+        this.zx = 0;
+        this.xy = 0;
+        return this;
     };
     /**
      * <p>
@@ -152,14 +582,47 @@ var Spinor3 = (function () {
         return Spinor3.spinor(yz, zx, xy, α).normalize();
     };
     /**
+     * Computes the rotor that rotates vector <code>a</code> to vector <code>b</code>.
+     *
+     * @param a The <em>from</em> vector.
+     * @param b The <em>to</em> vector.
+     */
+    Spinor3.rotorFromDirections = function (a, b) {
+        return Spinor3.zero.clone().rotorFromDirections(a, b);
+    };
+    /**
      * @param yz
      * @param zx
      * @param xy
      * @param α
+     * @param uom
      */
     Spinor3.spinor = function (yz, zx, xy, α, uom) {
-        return new Spinor3(α, yz, zx, xy, uom);
+        return new Spinor3([yz, zx, xy, α], uom, magicCode);
     };
+    Spinor3.wedge = function (a, b) {
+        var ax = a.x;
+        var ay = a.y;
+        var az = a.z;
+        var bx = b.x;
+        var by = b.y;
+        var bz = b.z;
+        var yz = wedgeYZ(ax, ay, az, bx, by, bz);
+        var zx = wedgeZX(ax, ay, az, bx, by, bz);
+        var xy = wedgeXY(ax, ay, az, bx, by, bz);
+        return Spinor3.spinor(yz, zx, xy, 0);
+    };
+    /**
+     *
+     */
+    Spinor3.one = Spinor3.spinor(0, 0, 0, 1);
+    /**
+     *
+     */
+    Spinor3.zero = Spinor3.spinor(0, 0, 0, 0);
     return Spinor3;
 }());
 export { Spinor3 };
+applyMixins(Spinor3, [Lockable]);
+Spinor3.one.lock();
+Spinor3.zero.lock();

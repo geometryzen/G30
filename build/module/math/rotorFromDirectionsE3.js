@@ -189,7 +189,7 @@ export function rotorFromDirectionsE3(a, b, B, m) {
             m.yz = wedgeYZ(rx, ry, rz, a.x, a.y, a.z);
             m.zx = wedgeZX(rx, ry, rz, a.x, a.y, a.z);
             m.xy = wedgeXY(rx, ry, rz, a.x, a.y, a.z);
-            m.direction(true);
+            m.normalize();
             m.rotorFromGeneratorAngle(m, Math.PI);
         }
     }

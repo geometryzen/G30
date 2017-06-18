@@ -19,7 +19,7 @@ import { QQ } from './QQ';
 import { randomRange } from './randomRange';
 import { readOnly } from '../i18n/readOnly';
 import { rcoG3 } from './rcoG3';
-import { rotorFromDirectionsE3 } from './rotorFromDirectionsE3';
+import { rotorFromDirectionsE3, MutableSpinor } from './rotorFromDirectionsE3';
 import { scpG3 } from './scpG3';
 import { Scalar } from './Scalar';
 import { SpinorE3 } from './SpinorE3';
@@ -157,7 +157,7 @@ const UNLOCKED = -1 * Math.random();
 /**
  * A multivector with a Euclidean metric and Cartesian coordinates.
  */
-export class Geometric3 implements CartesianG3, GeometricE3 {
+export class Geometric3 implements CartesianG3, GeometricE3, MutableSpinor {
 
     /**
      * 
@@ -1380,6 +1380,10 @@ export class Geometric3 implements CartesianG3, GeometricE3 {
         }
     }
 
+    normalize(): Geometric3 {
+        return this;
+    }
+
     /**
      * Sets this multivector to the identity element for multiplication, <b>1</b>.
      */
@@ -1828,7 +1832,7 @@ export class Geometric3 implements CartesianG3, GeometricE3 {
      * @param a
      * @param b
      */
-    versor(a: VectorE3, b: VectorE3): this {
+    versor(a: VectorE3, b: VectorE3): Geometric3 {
         this.uom = Unit.mul(a.uom, b.uom);
 
         const ax = a.x;

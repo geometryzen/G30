@@ -1,34 +1,143 @@
+import { applyMixins } from './applyMixins';
+import { approx } from './approx';
 import { BivectorE3 } from './BivectorE3';
 import { CartesianG3 } from './CartesianG3';
 import { isNumber } from '../checks/isNumber';
 import { isSpinorE3 } from './isSpinorE3';
 import { isVectorE3 } from './isVectorE3';
+import { lock, LockableMixin as Lockable, TargetLockedError } from './Lockable';
 import { MatrixLike } from './MatrixLike';
-import { mustBeNumber } from '../checks/mustBeNumber';
 import { mustBeVectorE3 } from './mustBeVectorE3';
 import { randomRange } from './randomRange';
 import { readOnly } from '../i18n/readOnly';
 import { SpinorE3 } from './SpinorE3';
 import { Unit } from './Unit';
 import { VectorE3 } from './VectorE3';
+import { wedgeXY } from './wedgeXY';
+import { wedgeYZ } from './wedgeYZ';
+import { wedgeZX } from './wedgeZX';
+
+const COORD_X = 0;
+const COORD_Y = 1;
+const COORD_Z = 2;
+// const BASIS_LABELS = ['e1', 'e2', 'e3'];
+
+/**
+ * Coordinates corresponding to basis labels.
+ */
+/*
+function coordinates(m: VectorE3): number[] {
+    return [m.x, m.y, m.z];
+}
+*/
+const zero = function zero(): [number, number, number] {
+    return [0, 0, 0];
+};
+
+const vector = function vector(x: number, y: number, z: number): [number, number, number] {
+    const coords = zero();
+    coords[COORD_X] = x;
+    coords[COORD_Y] = y;
+    coords[COORD_Z] = z;
+    return coords;
+};
+
+const magicCode = Math.random();
 
 /**
  * 
  */
-export class Vector3 implements VectorE3, CartesianG3 {
-    public x: number;
-    public y: number;
-    public z: number;
-    public uom: Unit;
+export class Vector3 implements VectorE3, CartesianG3, Lockable {
+    // Lockable
+    isLocked: () => boolean;
+    lock: () => number;
+    unlock: (token: number) => void;
 
     /**
      * 
      */
-    constructor(x: number, y: number, z: number, uom?: Unit) {
-        this.x = mustBeNumber('x', x);
-        this.y = mustBeNumber('y', y);
-        this.z = mustBeNumber('z', z);
+    private readonly coords_: [number, number, number];
+
+    /**
+     * 
+     */
+    private modified_: boolean;
+
+    public uom: Unit;
+
+    /**
+     * Constructs a mutable vector.
+     * This may only be used internally.
+     */
+    constructor(coords: [number, number, number], uom: Unit, code: number) {
+        if (code !== magicCode) {
+            throw new Error("Use the static creation methods instead of the constructor");
+        }
+        this.coords_ = coords;
+        this.modified_ = false;
         this.uom = Unit.mustBeUnit('uom', uom);
+    }
+    get length(): number {
+        return 3;
+    }
+
+    get modified(): boolean {
+        return this.modified_;
+    }
+    set modified(modified: boolean) {
+        if (this.isLocked()) {
+            throw new TargetLockedError('set modified');
+        }
+        this.modified_ = modified;
+    }
+
+    getComponent(i: number): number {
+        return this.coords_[i];
+    }
+
+    /**
+     * The coordinate corresponding to the e1 basis vector.
+     */
+    get x(): number {
+        return this.coords_[COORD_X];
+    }
+    set x(value: number) {
+        if (this.isLocked()) {
+            throw new TargetLockedError('set x');
+        }
+        const coords = this.coords_;
+        this.modified_ = this.modified_ || coords[COORD_X] !== value;
+        coords[COORD_X] = value;
+    }
+
+    /**
+     * The coordinate corresponding to the e2 basis vector.
+     */
+    get y(): number {
+        return this.coords_[COORD_Y];
+    }
+    set y(value: number) {
+        if (this.isLocked()) {
+            throw new TargetLockedError('set y');
+        }
+        const coords = this.coords_;
+        this.modified_ = this.modified_ || coords[COORD_Y] !== value;
+        coords[COORD_Y] = value;
+    }
+
+    /**
+     * The coordinate corresponding to the e3 basis vector.
+     */
+    get z(): number {
+        return this.coords_[COORD_Z];
+    }
+    set z(value: number) {
+        if (this.isLocked()) {
+            throw new TargetLockedError('set z');
+        }
+        const coords = this.coords_;
+        this.modified_ = this.modified_ || coords[COORD_Z] !== value;
+        coords[COORD_Z] = value;
     }
 
     /**
@@ -44,11 +153,24 @@ export class Vector3 implements VectorE3, CartesianG3 {
     /**
      * 
      */
-    add(rhs: VectorE3): this {
-        this.x += rhs.x;
-        this.y += rhs.y;
-        this.z += rhs.z;
-        this.uom = Unit.compatible(this.uom, rhs.uom);
+    add(rhs: VectorE3, α = 1): Vector3 {
+        if (!this.isLocked()) {
+            return lock(this.clone().add(rhs, α));
+        }
+        else {
+            this.x += rhs.x;
+            this.y += rhs.y;
+            this.z += rhs.z;
+            this.uom = Unit.compatible(this.uom, rhs.uom);
+            return this;
+        }
+    }
+
+    /**
+     *
+     */
+    approx(n: number): Vector3 {
+        approx(this.coords_, n);
         return this;
     }
 
@@ -78,7 +200,7 @@ export class Vector3 implements VectorE3, CartesianG3 {
      * 
      */
     clone(): Vector3 {
-        return new Vector3(this.x, this.y, this.z, this.uom);
+        return Vector3.vector(this.x, this.y, this.z, this.uom);
     }
 
     /**
@@ -89,6 +211,27 @@ export class Vector3 implements VectorE3, CartesianG3 {
         this.x = source.x;
         this.y = source.y;
         this.z = source.z;
+        return this;
+    }
+
+    cross(v: VectorE3): Vector3 {
+        return this.cross2(this, v);
+    }
+
+    /**
+     * <code>this ⟼ a ✕ b</code>
+     *
+     * @param a
+     * @param b
+     * @returns a x b
+     */
+    cross2(a: VectorE3, b: VectorE3): Vector3 {
+        const ax = a.x, ay = a.y, az = a.z;
+        const bx = b.x, by = b.y, bz = b.z;
+
+        this.x = wedgeYZ(ax, ay, az, bx, by, bz);
+        this.y = wedgeZX(ax, ay, az, bx, by, bz);
+        this.z = wedgeXY(ax, ay, az, bx, by, bz);
         return this;
     }
 
@@ -241,6 +384,13 @@ export class Vector3 implements VectorE3, CartesianG3 {
         return x * x + y * y + z * z;
     }
 
+    stress(σ: VectorE3) {
+        this.x *= σ.x;
+        this.y *= σ.y;
+        this.z *= σ.z;
+        return this;
+    }
+
     /**
      * 
      */
@@ -283,7 +433,7 @@ export class Vector3 implements VectorE3, CartesianG3 {
     __add__(rhs: VectorE3): Vector3 {
         if (isVectorE3(rhs) && !isSpinorE3(rhs)) {
             const uom = Unit.compatible(this.uom, rhs.uom);
-            return new Vector3(this.x + rhs.x, this.y + rhs.y, this.z + rhs.z, uom);
+            return Vector3.vector(this.x + rhs.x, this.y + rhs.y, this.z + rhs.z, uom);
         }
         else {
             return void 0;
@@ -292,30 +442,37 @@ export class Vector3 implements VectorE3, CartesianG3 {
 
     __div__(rhs: number): Vector3 {
         if (isNumber(rhs)) {
-            return new Vector3(this.x / rhs, this.y / rhs, this.z / rhs, this.uom);
+            return Vector3.vector(this.x / rhs, this.y / rhs, this.z / rhs, this.uom);
         }
         else {
             return void 0;
         }
+    }
+
+    __rdiv__(lhs: any): Vector3 {
+        return void 0;
     }
 
     __mul__(rhs: number): Vector3 {
         if (isNumber(rhs)) {
-            return new Vector3(this.x * rhs, this.y * rhs, this.z * rhs, this.uom);
+            return Vector3.vector(this.x * rhs, this.y * rhs, this.z * rhs, this.uom);
         }
         else {
             return void 0;
         }
     }
+    __pos__(): Vector3 {
+        return lock(Vector3.copy(this));
+    }
 
     __neg__(): Vector3 {
-        return new Vector3(-this.x, -this.y, -this.z, this.uom);
+        return lock(Vector3.copy(this).neg());
     }
 
     __radd__(lhs: VectorE3): Vector3 {
         if (isVectorE3(lhs) && !isSpinorE3(lhs)) {
             const uom = Unit.compatible(lhs.uom, this.uom);
-            return new Vector3(lhs.x + this.x, lhs.y + this.y, lhs.z + this.z, uom);
+            return Vector3.vector(lhs.x + this.x, lhs.y + this.y, lhs.z + this.z, uom);
         }
         else {
             return void 0;
@@ -324,7 +481,7 @@ export class Vector3 implements VectorE3, CartesianG3 {
 
     __rmul__(lhs: number): Vector3 {
         if (isNumber(lhs)) {
-            return new Vector3(lhs * this.x, lhs * this.y, lhs * this.z, this.uom);
+            return Vector3.vector(lhs * this.x, lhs * this.y, lhs * this.z, this.uom);
         }
         else {
             return void 0;
@@ -334,7 +491,7 @@ export class Vector3 implements VectorE3, CartesianG3 {
     __rsub__(lhs: VectorE3): Vector3 {
         if (isVectorE3(lhs) && !isSpinorE3(lhs)) {
             const uom = Unit.compatible(lhs.uom, this.uom);
-            return new Vector3(lhs.x - this.x, lhs.y - this.y, lhs.z - this.z, uom);
+            return Vector3.vector(lhs.x - this.x, lhs.y - this.y, lhs.z - this.z, uom);
         }
         else {
             return void 0;
@@ -344,19 +501,38 @@ export class Vector3 implements VectorE3, CartesianG3 {
     __sub__(rhs: VectorE3): Vector3 {
         if (isVectorE3(rhs) && !isSpinorE3(rhs)) {
             const uom = Unit.compatible(this.uom, rhs.uom);
-            return new Vector3(this.x - rhs.x, this.y - rhs.y, this.z - rhs.z, uom);
+            return Vector3.vector(this.x - rhs.x, this.y - rhs.y, this.z - rhs.z, uom);
         }
         else {
             return void 0;
         }
     }
 
+    static copy(vector: VectorE3): Vector3 {
+        return Vector3.vector(vector.x, vector.y, vector.z, vector.uom);
+    }
+
     /**
      * Constructs a vector by computing the dual of a bivector.
      */
     static dual(B: BivectorE3): Vector3 {
-        return new Vector3(0, 0, 0, void 0).dual(B);
+        return Vector3.zero.clone().dual(B);
     }
+
+    /**
+     *
+     */
+    static readonly e1 = Vector3.vector(1, 0, 0, void 0);
+
+    /**
+     *
+     */
+    static readonly e2 = Vector3.vector(0, 1, 0, void 0);
+
+    /**
+     *
+     */
+    static readonly e3 = Vector3.vector(0, 0, 1, void 0);
 
     /**
      * <p>
@@ -377,7 +553,17 @@ export class Vector3 implements VectorE3, CartesianG3 {
      * @param uom
      */
     static vector(x: number, y: number, z: number, uom?: Unit): Vector3 {
-        return new Vector3(x, y, z, uom);
+        return new Vector3(vector(x, y, z), uom, magicCode);
     }
 
+    /**
+     *
+     */
+    static readonly zero = Vector3.vector(0, 0, 0, void 0);
 }
+applyMixins(Vector3, [Lockable]);
+
+Vector3.zero.lock();
+Vector3.e1.lock();
+Vector3.e2.lock();
+Vector3.e3.lock();

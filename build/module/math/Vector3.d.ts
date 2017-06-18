@@ -1,5 +1,6 @@
 import { BivectorE3 } from './BivectorE3';
 import { CartesianG3 } from './CartesianG3';
+import { LockableMixin as Lockable } from './Lockable';
 import { MatrixLike } from './MatrixLike';
 import { SpinorE3 } from './SpinorE3';
 import { Unit } from './Unit';
@@ -7,15 +8,39 @@ import { VectorE3 } from './VectorE3';
 /**
  *
  */
-export declare class Vector3 implements VectorE3, CartesianG3 {
-    x: number;
-    y: number;
-    z: number;
-    uom: Unit;
+export declare class Vector3 implements VectorE3, CartesianG3, Lockable {
+    isLocked: () => boolean;
+    lock: () => number;
+    unlock: (token: number) => void;
     /**
      *
      */
-    constructor(x: number, y: number, z: number, uom?: Unit);
+    private readonly coords_;
+    /**
+     *
+     */
+    private modified_;
+    uom: Unit;
+    /**
+     * Constructs a mutable vector.
+     * This may only be used internally.
+     */
+    constructor(coords: [number, number, number], uom: Unit, code: number);
+    readonly length: number;
+    modified: boolean;
+    getComponent(i: number): number;
+    /**
+     * The coordinate corresponding to the e1 basis vector.
+     */
+    x: number;
+    /**
+     * The coordinate corresponding to the e2 basis vector.
+     */
+    y: number;
+    /**
+     * The coordinate corresponding to the e3 basis vector.
+     */
+    z: number;
     /**
      *
      */
@@ -23,7 +48,11 @@ export declare class Vector3 implements VectorE3, CartesianG3 {
     /**
      *
      */
-    add(rhs: VectorE3): this;
+    add(rhs: VectorE3, α?: number): Vector3;
+    /**
+     *
+     */
+    approx(n: number): Vector3;
     /**
      * Pre-multiplies the column vector corresponding to this vector by the matrix.
      * The result is applied to this vector.
@@ -39,6 +68,15 @@ export declare class Vector3 implements VectorE3, CartesianG3 {
      *
      */
     copy(source: VectorE3): this;
+    cross(v: VectorE3): Vector3;
+    /**
+     * <code>this ⟼ a ✕ b</code>
+     *
+     * @param a
+     * @param b
+     * @returns a x b
+     */
+    cross2(a: VectorE3, b: VectorE3): Vector3;
     /**
      *
      */
@@ -95,6 +133,7 @@ export declare class Vector3 implements VectorE3, CartesianG3 {
      * This is an alias for the `quaditude` method.
      */
     squaredNorm(): number;
+    stress(σ: VectorE3): this;
     /**
      *
      */
@@ -118,16 +157,31 @@ export declare class Vector3 implements VectorE3, CartesianG3 {
     toString(radix?: number): string;
     __add__(rhs: VectorE3): Vector3;
     __div__(rhs: number): Vector3;
+    __rdiv__(lhs: any): Vector3;
     __mul__(rhs: number): Vector3;
+    __pos__(): Vector3;
     __neg__(): Vector3;
     __radd__(lhs: VectorE3): Vector3;
     __rmul__(lhs: number): Vector3;
     __rsub__(lhs: VectorE3): Vector3;
     __sub__(rhs: VectorE3): Vector3;
+    static copy(vector: VectorE3): Vector3;
     /**
      * Constructs a vector by computing the dual of a bivector.
      */
     static dual(B: BivectorE3): Vector3;
+    /**
+     *
+     */
+    static readonly e1: Vector3;
+    /**
+     *
+     */
+    static readonly e2: Vector3;
+    /**
+     *
+     */
+    static readonly e3: Vector3;
     /**
      * <p>
      * Computes a unit vector with a random direction.
@@ -141,4 +195,8 @@ export declare class Vector3 implements VectorE3, CartesianG3 {
      * @param uom
      */
     static vector(x: number, y: number, z: number, uom?: Unit): Vector3;
+    /**
+     *
+     */
+    static readonly zero: Vector3;
 }

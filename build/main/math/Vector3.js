@@ -1,26 +1,135 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var applyMixins_1 = require("./applyMixins");
+var approx_1 = require("./approx");
 var isNumber_1 = require("../checks/isNumber");
 var isSpinorE3_1 = require("./isSpinorE3");
 var isVectorE3_1 = require("./isVectorE3");
-var mustBeNumber_1 = require("../checks/mustBeNumber");
+var Lockable_1 = require("./Lockable");
+// import { mustBeNumber } from '../checks/mustBeNumber';
 var mustBeVectorE3_1 = require("./mustBeVectorE3");
 var randomRange_1 = require("./randomRange");
 var readOnly_1 = require("../i18n/readOnly");
 var Unit_1 = require("./Unit");
+var wedgeXY_1 = require("./wedgeXY");
+var wedgeYZ_1 = require("./wedgeYZ");
+var wedgeZX_1 = require("./wedgeZX");
+var COORD_X = 0;
+var COORD_Y = 1;
+var COORD_Z = 2;
+// const BASIS_LABELS = ['e1', 'e2', 'e3'];
+/**
+ * Coordinates corresponding to basis labels.
+ */
+/*
+function coordinates(m: VectorE3): number[] {
+    return [m.x, m.y, m.z];
+}
+*/
+var zero = function zero() {
+    return [0, 0, 0];
+};
+var vector = function vector(x, y, z) {
+    var coords = zero();
+    coords[COORD_X] = x;
+    coords[COORD_Y] = y;
+    coords[COORD_Z] = z;
+    return coords;
+};
+var magicCode = Math.random();
 /**
  *
  */
 var Vector3 = (function () {
     /**
-     *
+     * Constructs a mutable vector.
+     * This may only be used internally.
      */
-    function Vector3(x, y, z, uom) {
-        this.x = mustBeNumber_1.mustBeNumber('x', x);
-        this.y = mustBeNumber_1.mustBeNumber('y', y);
-        this.z = mustBeNumber_1.mustBeNumber('z', z);
+    function Vector3(coords, uom, code) {
+        if (code !== magicCode) {
+            throw new Error("Use the static creation methods instead of the constructor");
+        }
+        this.coords_ = coords;
+        this.modified_ = false;
         this.uom = Unit_1.Unit.mustBeUnit('uom', uom);
     }
+    Object.defineProperty(Vector3.prototype, "length", {
+        get: function () {
+            return 3;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Vector3.prototype, "modified", {
+        get: function () {
+            return this.modified_;
+        },
+        set: function (modified) {
+            if (this.isLocked()) {
+                throw new Lockable_1.TargetLockedError('set modified');
+            }
+            this.modified_ = modified;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Vector3.prototype.getComponent = function (i) {
+        return this.coords_[i];
+    };
+    Object.defineProperty(Vector3.prototype, "x", {
+        /**
+         * The coordinate corresponding to the e1 basis vector.
+         */
+        get: function () {
+            return this.coords_[COORD_X];
+        },
+        set: function (value) {
+            if (this.isLocked()) {
+                throw new Lockable_1.TargetLockedError('set x');
+            }
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_X] !== value;
+            coords[COORD_X] = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Vector3.prototype, "y", {
+        /**
+         * The coordinate corresponding to the e2 basis vector.
+         */
+        get: function () {
+            return this.coords_[COORD_Y];
+        },
+        set: function (value) {
+            if (this.isLocked()) {
+                throw new Lockable_1.TargetLockedError('set y');
+            }
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_Y] !== value;
+            coords[COORD_Y] = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Vector3.prototype, "z", {
+        /**
+         * The coordinate corresponding to the e3 basis vector.
+         */
+        get: function () {
+            return this.coords_[COORD_Z];
+        },
+        set: function (value) {
+            if (this.isLocked()) {
+                throw new Lockable_1.TargetLockedError('set z');
+            }
+            var coords = this.coords_;
+            this.modified_ = this.modified_ || coords[COORD_Z] !== value;
+            coords[COORD_Z] = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Vector3.prototype, "maskG3", {
         /**
          *
@@ -37,11 +146,24 @@ var Vector3 = (function () {
     /**
      *
      */
-    Vector3.prototype.add = function (rhs) {
-        this.x += rhs.x;
-        this.y += rhs.y;
-        this.z += rhs.z;
-        this.uom = Unit_1.Unit.compatible(this.uom, rhs.uom);
+    Vector3.prototype.add = function (rhs, α) {
+        if (α === void 0) { α = 1; }
+        if (!this.isLocked()) {
+            return Lockable_1.lock(this.clone().add(rhs, α));
+        }
+        else {
+            this.x += rhs.x;
+            this.y += rhs.y;
+            this.z += rhs.z;
+            this.uom = Unit_1.Unit.compatible(this.uom, rhs.uom);
+            return this;
+        }
+    };
+    /**
+     *
+     */
+    Vector3.prototype.approx = function (n) {
+        approx_1.approx(this.coords_, n);
         return this;
     };
     /**
@@ -66,7 +188,7 @@ var Vector3 = (function () {
      *
      */
     Vector3.prototype.clone = function () {
-        return new Vector3(this.x, this.y, this.z, this.uom);
+        return Vector3.vector(this.x, this.y, this.z, this.uom);
     };
     /**
      *
@@ -76,6 +198,24 @@ var Vector3 = (function () {
         this.x = source.x;
         this.y = source.y;
         this.z = source.z;
+        return this;
+    };
+    Vector3.prototype.cross = function (v) {
+        return this.cross2(this, v);
+    };
+    /**
+     * <code>this ⟼ a ✕ b</code>
+     *
+     * @param a
+     * @param b
+     * @returns a x b
+     */
+    Vector3.prototype.cross2 = function (a, b) {
+        var ax = a.x, ay = a.y, az = a.z;
+        var bx = b.x, by = b.y, bz = b.z;
+        this.x = wedgeYZ_1.wedgeYZ(ax, ay, az, bx, by, bz);
+        this.y = wedgeZX_1.wedgeZX(ax, ay, az, bx, by, bz);
+        this.z = wedgeXY_1.wedgeXY(ax, ay, az, bx, by, bz);
         return this;
     };
     /**
@@ -210,6 +350,12 @@ var Vector3 = (function () {
         var z = this.z;
         return x * x + y * y + z * z;
     };
+    Vector3.prototype.stress = function (σ) {
+        this.x *= σ.x;
+        this.y *= σ.y;
+        this.z *= σ.z;
+        return this;
+    };
     /**
      *
      */
@@ -247,7 +393,7 @@ var Vector3 = (function () {
     Vector3.prototype.__add__ = function (rhs) {
         if (isVectorE3_1.isVectorE3(rhs) && !isSpinorE3_1.isSpinorE3(rhs)) {
             var uom = Unit_1.Unit.compatible(this.uom, rhs.uom);
-            return new Vector3(this.x + rhs.x, this.y + rhs.y, this.z + rhs.z, uom);
+            return Vector3.vector(this.x + rhs.x, this.y + rhs.y, this.z + rhs.z, uom);
         }
         else {
             return void 0;
@@ -255,27 +401,33 @@ var Vector3 = (function () {
     };
     Vector3.prototype.__div__ = function (rhs) {
         if (isNumber_1.isNumber(rhs)) {
-            return new Vector3(this.x / rhs, this.y / rhs, this.z / rhs, this.uom);
+            return Vector3.vector(this.x / rhs, this.y / rhs, this.z / rhs, this.uom);
         }
         else {
             return void 0;
         }
+    };
+    Vector3.prototype.__rdiv__ = function (lhs) {
+        return void 0;
     };
     Vector3.prototype.__mul__ = function (rhs) {
         if (isNumber_1.isNumber(rhs)) {
-            return new Vector3(this.x * rhs, this.y * rhs, this.z * rhs, this.uom);
+            return Vector3.vector(this.x * rhs, this.y * rhs, this.z * rhs, this.uom);
         }
         else {
             return void 0;
         }
     };
+    Vector3.prototype.__pos__ = function () {
+        return Lockable_1.lock(Vector3.copy(this));
+    };
     Vector3.prototype.__neg__ = function () {
-        return new Vector3(-this.x, -this.y, -this.z, this.uom);
+        return Lockable_1.lock(Vector3.copy(this).neg());
     };
     Vector3.prototype.__radd__ = function (lhs) {
         if (isVectorE3_1.isVectorE3(lhs) && !isSpinorE3_1.isSpinorE3(lhs)) {
             var uom = Unit_1.Unit.compatible(lhs.uom, this.uom);
-            return new Vector3(lhs.x + this.x, lhs.y + this.y, lhs.z + this.z, uom);
+            return Vector3.vector(lhs.x + this.x, lhs.y + this.y, lhs.z + this.z, uom);
         }
         else {
             return void 0;
@@ -283,7 +435,7 @@ var Vector3 = (function () {
     };
     Vector3.prototype.__rmul__ = function (lhs) {
         if (isNumber_1.isNumber(lhs)) {
-            return new Vector3(lhs * this.x, lhs * this.y, lhs * this.z, this.uom);
+            return Vector3.vector(lhs * this.x, lhs * this.y, lhs * this.z, this.uom);
         }
         else {
             return void 0;
@@ -292,7 +444,7 @@ var Vector3 = (function () {
     Vector3.prototype.__rsub__ = function (lhs) {
         if (isVectorE3_1.isVectorE3(lhs) && !isSpinorE3_1.isSpinorE3(lhs)) {
             var uom = Unit_1.Unit.compatible(lhs.uom, this.uom);
-            return new Vector3(lhs.x - this.x, lhs.y - this.y, lhs.z - this.z, uom);
+            return Vector3.vector(lhs.x - this.x, lhs.y - this.y, lhs.z - this.z, uom);
         }
         else {
             return void 0;
@@ -301,17 +453,20 @@ var Vector3 = (function () {
     Vector3.prototype.__sub__ = function (rhs) {
         if (isVectorE3_1.isVectorE3(rhs) && !isSpinorE3_1.isSpinorE3(rhs)) {
             var uom = Unit_1.Unit.compatible(this.uom, rhs.uom);
-            return new Vector3(this.x - rhs.x, this.y - rhs.y, this.z - rhs.z, uom);
+            return Vector3.vector(this.x - rhs.x, this.y - rhs.y, this.z - rhs.z, uom);
         }
         else {
             return void 0;
         }
     };
+    Vector3.copy = function (vector) {
+        return Vector3.vector(vector.x, vector.y, vector.z, vector.uom);
+    };
     /**
      * Constructs a vector by computing the dual of a bivector.
      */
     Vector3.dual = function (B) {
-        return new Vector3(0, 0, 0, void 0).dual(B);
+        return Vector3.zero.clone().dual(B);
     };
     /**
      * <p>
@@ -331,8 +486,29 @@ var Vector3 = (function () {
      * @param uom
      */
     Vector3.vector = function (x, y, z, uom) {
-        return new Vector3(x, y, z, uom);
+        return new Vector3(vector(x, y, z), uom, magicCode);
     };
+    /**
+     *
+     */
+    Vector3.e1 = Vector3.vector(1, 0, 0, void 0);
+    /**
+     *
+     */
+    Vector3.e2 = Vector3.vector(0, 1, 0, void 0);
+    /**
+     *
+     */
+    Vector3.e3 = Vector3.vector(0, 0, 1, void 0);
+    /**
+     *
+     */
+    Vector3.zero = Vector3.vector(0, 0, 0, void 0);
     return Vector3;
 }());
 exports.Vector3 = Vector3;
+applyMixins_1.applyMixins(Vector3, [Lockable_1.LockableMixin]);
+Vector3.zero.lock();
+Vector3.e1.lock();
+Vector3.e2.lock();
+Vector3.e3.lock();

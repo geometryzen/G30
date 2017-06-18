@@ -1,6 +1,7 @@
 import { BivectorE3 } from './BivectorE3';
 import { CartesianG3 } from './CartesianG3';
 import { GeometricE3 } from './GeometricE3';
+import { MutableSpinor } from './rotorFromDirectionsE3';
 import { Scalar } from './Scalar';
 import { SpinorE3 } from './SpinorE3';
 import { Unit } from './Unit';
@@ -8,7 +9,7 @@ import { VectorE3 } from './VectorE3';
 /**
  * A multivector with a Euclidean metric and Cartesian coordinates.
  */
-export declare class Geometric3 implements CartesianG3, GeometricE3 {
+export declare class Geometric3 implements CartesianG3, GeometricE3, MutableSpinor {
     /**
      *
      */
@@ -339,6 +340,7 @@ export declare class Geometric3 implements CartesianG3, GeometricE3 {
      * </p>
      */
     norm(): Geometric3;
+    normalize(): Geometric3;
     /**
      * Sets this multivector to the identity element for multiplication, <b>1</b>.
      */
@@ -485,7 +487,7 @@ export declare class Geometric3 implements CartesianG3, GeometricE3 {
      * @param a
      * @param b
      */
-    versor(a: VectorE3, b: VectorE3): this;
+    versor(a: VectorE3, b: VectorE3): Geometric3;
     writeVector(vector: VectorE3): void;
     /**
      * @param M

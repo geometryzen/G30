@@ -1300,6 +1300,9 @@ var Geometric3 = (function () {
             return this;
         }
     };
+    Geometric3.prototype.normalize = function () {
+        return this;
+    };
     /**
      * Sets this multivector to the identity element for multiplication, <b>1</b>.
      */
