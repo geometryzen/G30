@@ -1,1 +1,2 @@
-# G30
+# davinci-matrix
+A matrix library for Machine Learning
