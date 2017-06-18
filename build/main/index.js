@@ -1,4 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var Geometric3_1 = require("./lib/math/Geometric3");
+var Dimensions_1 = require("./math/Dimensions");
+exports.Dimensions = Dimensions_1.Dimensions;
+var Geometric3_1 = require("./math/Geometric3");
 exports.Geometric3 = Geometric3_1.Geometric3;
+var QQ_1 = require("./math/QQ");
+exports.QQ = QQ_1.QQ;
+var Unit_1 = require("./math/Unit");
+exports.Unit = Unit_1.Unit;

@@ -12,7 +12,9 @@
             true,
             "spaces"
         ],
-        "interface-name": false,
+        "interface-name": [
+            false
+        ],
         "jsdoc-format": true,
         "label-position": true,
         "max-line-length": [
@@ -61,7 +63,9 @@
             "avoid-escape"
         ],
         "radix": false,
-        "semicolon": true,
+        "semicolon": [
+            true
+        ],
         "switch-default": false,
         "triple-equals": [
             true,

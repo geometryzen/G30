@@ -28,7 +28,7 @@ module.exports = function (config) {
 
       // Include this with a <script> tag so that System is defined.
       'node_modules/systemjs/dist/system.src.js',
-      { pattern: 'node_modules/systemjs/dist/system.src.js.map', included: false, watched: false },
+      { pattern: 'node_modules/systemjs/dist/system.js.map', included: false, watched: false },
 
       //
       { pattern: 'systemjs.config.js', included: false, watched: false },
@@ -83,7 +83,7 @@ module.exports = function (config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome'],
+    browsers: ['PhantomJS'],
 
 
     // Continuous Integration mode

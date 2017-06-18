@@ -1,7 +1,7 @@
 {
   "name": "space-algebra",
   "version": "0.0.1",
-  "description": "A matrix library for Machine Learning",
+  "description": "A TypeScript library implementing the Geometric Algebra of 3D space with optional Units of Measure.",
   "author": {
     "name": "David Geo Holmes",
     "email": "david.geo.holmes@gmail.com"
@@ -36,13 +36,13 @@
   "scripts": {
     "info": "npm-scripts-info",
     "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",
-    "build:browser": "rollup --config rollup.config.js --format umd --name 'EIGHT' --output build/browser/index.js && sorcery -i build/browser/index.js",
+    "build:browser": "rollup --config rollup.config.js --format umd --name 'spaceAlgebra' --output build/browser/index.js && sorcery -i build/browser/index.js",
     "lint": "tslint src/**/*.ts",
     "unit": "trash test && tsc -p tsconfig.json && karma start",
     "test": "yarn lint && yarn unit && nyc check-coverage --lines 40 --functions 30 --branches 20",
     "watch": "concurrently -r --kill-others 'tsc -p tsconfig.json -w' 'karma start'",
     "docs": "yarn docs:typedoc && opn docs/index.html",
-    "docs:typedoc": "trash docs && typedoc src/index.ts --excludePrivate --excludeNotExported --mode file --theme minimal --out docs",
+    "docs:typedoc": "trash docs && typedoc src/index.d.ts --excludePrivate --excludeNotExported --mode file --theme minimal --out docs",
     "pages": "yarn docs:typedoc && gh-pages -d docs",
     "changelog": "standard-version"
   },
@@ -101,7 +101,7 @@
     "tslint": "^5.3.2",
     "tslint-config-standard": "^5.0.2",
     "typedoc": "^0.7.1",
-    "typescript": "^2.3.3"
+    "typescript": "^2.3.4"
   },
   "dependencies": {
     "tslib": "^1.7.1"

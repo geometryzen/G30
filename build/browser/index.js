@@ -1,242 +1,8 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.EIGHT = global.EIGHT || {})));
+	(factory((global.spaceAlgebra = global.spaceAlgebra || {})));
 }(this, (function (exports) { 'use strict';
-
-function approx(coords, n) {
-    var max = 0;
-    var iLen = coords.length;
-    for (var i = 0; i < iLen; i++) {
-        max = Math.max(max, Math.abs(coords[i]));
-    }
-    var threshold = max * Math.pow(10, -n);
-    for (var i = 0; i < iLen; i++) {
-        if (Math.abs(coords[i]) < threshold) {
-            coords[i] = 0;
-        }
-    }
-}
-
-function isDefined(arg) {
-    return (typeof arg !== 'undefined');
-}
-
-function isNull(x) {
-    return x === null;
-}
-
-function isUndefined(arg) {
-    return (typeof arg === 'undefined');
-}
-
-function arraysEQ(a, b) {
-    if (isDefined(a)) {
-        if (isDefined(b)) {
-            if (!isNull(a)) {
-                if (!isNull(b)) {
-                    var aLen = a.length;
-                    var bLen = b.length;
-                    if (aLen === bLen) {
-                        for (var i = 0; i < aLen; i++) {
-                            if (a[i] !== b[i]) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                    else {
-                        return false;
-                    }
-                }
-                else {
-                    return false;
-                }
-            }
-            else {
-                return isNull(b);
-            }
-        }
-        else {
-            return false;
-        }
-    }
-    else {
-        return isUndefined(b);
-    }
-}
-
-function dotVectorE3(a, b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-// Symbolic constants for the coordinate indices into the data array.
-// These are chosen to match those used by G3.
-// TODO: The goal should be to protect the user from changes in ordering.
-var COORD_W = 0;
-var COORD_X$1 = 1;
-var COORD_Y$1 = 2;
-var COORD_Z$1 = 3;
-var COORD_XY$1 = 4;
-var COORD_YZ$1 = 5;
-var COORD_ZX$1 = 6;
-var COORD_XYZ = 7;
-/**
- * @param index
- * 0: scalar
- * 1: x
- * 2: y
- * 3: z
- * 4: xy
- * 5: yz
- * 6: zx
- * 7: xyz
- */
-function compG3Get(m, index) {
-    switch (index) {
-        case COORD_W: {
-            return m.a;
-        }
-        case COORD_X$1: {
-            return m.x;
-        }
-        case COORD_Y$1: {
-            return m.y;
-        }
-        case COORD_Z$1: {
-            return m.z;
-        }
-        case COORD_XY$1: {
-            return m.xy;
-        }
-        case COORD_YZ$1: {
-            return m.yz;
-        }
-        case COORD_ZX$1: {
-            return m.zx;
-        }
-        case COORD_XYZ: {
-            return m.b;
-        }
-        default: {
-            throw new Error("index => " + index);
-        }
-    }
-}
-
-function extE3(a0, a1, a2, a3, a4, a5, a6, a7, b0, b1, b2, b3, b4, b5, b6, b7, index) {
-    a0 = +a0;
-    a1 = +a1;
-    a2 = +a2;
-    a3 = +a3;
-    a4 = +a4;
-    a5 = +a5;
-    a6 = +a6;
-    a7 = +a7;
-    b0 = +b0;
-    b1 = +b1;
-    b2 = +b2;
-    b3 = +b3;
-    b4 = +b4;
-    b5 = +b5;
-    b6 = +b6;
-    b7 = +b7;
-    index = index | 0;
-    var x = 0.0;
-    switch (~(~index)) {
-        case 0:
-            {
-                x = +(a0 * b0);
-            }
-            break;
-        case 1:
-            {
-                x = +(a0 * b1 + a1 * b0);
-            }
-            break;
-        case 2:
-            {
-                x = +(a0 * b2 + a2 * b0);
-            }
-            break;
-        case 3:
-            {
-                x = +(a0 * b3 + a3 * b0);
-            }
-            break;
-        case 4:
-            {
-                x = +(a0 * b4 + a1 * b2 - a2 * b1 + a4 * b0);
-            }
-            break;
-        case 5:
-            {
-                x = +(a0 * b5 + a2 * b3 - a3 * b2 + a5 * b0);
-            }
-            break;
-        case 6:
-            {
-                x = +(a0 * b6 - a1 * b3 + a3 * b1 + a6 * b0);
-            }
-            break;
-        case 7:
-            {
-                x = +(a0 * b7 + a1 * b5 + a2 * b6 + a3 * b4 + a4 * b3 + a5 * b1 + a6 * b2 + a7 * b0);
-            }
-            break;
-        default: {
-            throw new Error("index must be in the range [0..7]");
-        }
-    }
-    return +x;
-}
-
-var COORD_W$1 = 0;
-var COORD_X$2 = 1;
-var COORD_Y$2 = 2;
-var COORD_Z$2 = 3;
-var COORD_XY$2 = 4;
-var COORD_YZ$2 = 5;
-var COORD_ZX$2 = 6;
-var COORD_XYZ$1 = 7;
-function compG3Set(m, index, value) {
-    switch (index) {
-        case COORD_W$1: {
-            m.a = value;
-            break;
-        }
-        case COORD_X$2: {
-            m.x = value;
-            break;
-        }
-        case COORD_Y$2: {
-            m.y = value;
-            break;
-        }
-        case COORD_Z$2: {
-            m.z = value;
-            break;
-        }
-        case COORD_XY$2: {
-            m.xy = value;
-            break;
-        }
-        case COORD_YZ$2: {
-            m.yz = value;
-            break;
-        }
-        case COORD_ZX$2: {
-            m.zx = value;
-            break;
-        }
-        case COORD_XYZ$1: {
-            m.b = value;
-            break;
-        }
-        default:
-            throw new Error("index => " + index);
-    }
-}
 
 /**
  * A summary of all the exponents in physical dimensions.
@@ -1754,6 +1520,240 @@ var Dimensions = (function () {
     Dimensions.VELOCITY_SQUARED = new Dimensions(R0, R2, M2, R0, R0, R0, R0, DimensionsSummary.VELOCITY_SQUARED);
     return Dimensions;
 }());
+
+function approx(coords, n) {
+    var max = 0;
+    var iLen = coords.length;
+    for (var i = 0; i < iLen; i++) {
+        max = Math.max(max, Math.abs(coords[i]));
+    }
+    var threshold = max * Math.pow(10, -n);
+    for (var i = 0; i < iLen; i++) {
+        if (Math.abs(coords[i]) < threshold) {
+            coords[i] = 0;
+        }
+    }
+}
+
+function isDefined(arg) {
+    return (typeof arg !== 'undefined');
+}
+
+function isNull(x) {
+    return x === null;
+}
+
+function isUndefined(arg) {
+    return (typeof arg === 'undefined');
+}
+
+function arraysEQ(a, b) {
+    if (isDefined(a)) {
+        if (isDefined(b)) {
+            if (!isNull(a)) {
+                if (!isNull(b)) {
+                    var aLen = a.length;
+                    var bLen = b.length;
+                    if (aLen === bLen) {
+                        for (var i = 0; i < aLen; i++) {
+                            if (a[i] !== b[i]) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return isNull(b);
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        return isUndefined(b);
+    }
+}
+
+function dotVectorE3(a, b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// Symbolic constants for the coordinate indices into the data array.
+// These are chosen to match those used by G3.
+// TODO: The goal should be to protect the user from changes in ordering.
+var COORD_W = 0;
+var COORD_X$1 = 1;
+var COORD_Y$1 = 2;
+var COORD_Z$1 = 3;
+var COORD_XY$1 = 4;
+var COORD_YZ$1 = 5;
+var COORD_ZX$1 = 6;
+var COORD_XYZ = 7;
+/**
+ * @param index
+ * 0: scalar
+ * 1: x
+ * 2: y
+ * 3: z
+ * 4: xy
+ * 5: yz
+ * 6: zx
+ * 7: xyz
+ */
+function compG3Get(m, index) {
+    switch (index) {
+        case COORD_W: {
+            return m.a;
+        }
+        case COORD_X$1: {
+            return m.x;
+        }
+        case COORD_Y$1: {
+            return m.y;
+        }
+        case COORD_Z$1: {
+            return m.z;
+        }
+        case COORD_XY$1: {
+            return m.xy;
+        }
+        case COORD_YZ$1: {
+            return m.yz;
+        }
+        case COORD_ZX$1: {
+            return m.zx;
+        }
+        case COORD_XYZ: {
+            return m.b;
+        }
+        default: {
+            throw new Error("index => " + index);
+        }
+    }
+}
+
+function extE3(a0, a1, a2, a3, a4, a5, a6, a7, b0, b1, b2, b3, b4, b5, b6, b7, index) {
+    a0 = +a0;
+    a1 = +a1;
+    a2 = +a2;
+    a3 = +a3;
+    a4 = +a4;
+    a5 = +a5;
+    a6 = +a6;
+    a7 = +a7;
+    b0 = +b0;
+    b1 = +b1;
+    b2 = +b2;
+    b3 = +b3;
+    b4 = +b4;
+    b5 = +b5;
+    b6 = +b6;
+    b7 = +b7;
+    index = index | 0;
+    var x = 0.0;
+    switch (~(~index)) {
+        case 0:
+            {
+                x = +(a0 * b0);
+            }
+            break;
+        case 1:
+            {
+                x = +(a0 * b1 + a1 * b0);
+            }
+            break;
+        case 2:
+            {
+                x = +(a0 * b2 + a2 * b0);
+            }
+            break;
+        case 3:
+            {
+                x = +(a0 * b3 + a3 * b0);
+            }
+            break;
+        case 4:
+            {
+                x = +(a0 * b4 + a1 * b2 - a2 * b1 + a4 * b0);
+            }
+            break;
+        case 5:
+            {
+                x = +(a0 * b5 + a2 * b3 - a3 * b2 + a5 * b0);
+            }
+            break;
+        case 6:
+            {
+                x = +(a0 * b6 - a1 * b3 + a3 * b1 + a6 * b0);
+            }
+            break;
+        case 7:
+            {
+                x = +(a0 * b7 + a1 * b5 + a2 * b6 + a3 * b4 + a4 * b3 + a5 * b1 + a6 * b2 + a7 * b0);
+            }
+            break;
+        default: {
+            throw new Error("index must be in the range [0..7]");
+        }
+    }
+    return +x;
+}
+
+var COORD_W$1 = 0;
+var COORD_X$2 = 1;
+var COORD_Y$2 = 2;
+var COORD_Z$2 = 3;
+var COORD_XY$2 = 4;
+var COORD_YZ$2 = 5;
+var COORD_ZX$2 = 6;
+var COORD_XYZ$1 = 7;
+function compG3Set(m, index, value) {
+    switch (index) {
+        case COORD_W$1: {
+            m.a = value;
+            break;
+        }
+        case COORD_X$2: {
+            m.x = value;
+            break;
+        }
+        case COORD_Y$2: {
+            m.y = value;
+            break;
+        }
+        case COORD_Z$2: {
+            m.z = value;
+            break;
+        }
+        case COORD_XY$2: {
+            m.xy = value;
+            break;
+        }
+        case COORD_YZ$2: {
+            m.yz = value;
+            break;
+        }
+        case COORD_ZX$2: {
+            m.zx = value;
+            break;
+        }
+        case COORD_XYZ$1: {
+            m.b = value;
+            break;
+        }
+        default:
+            throw new Error("index => " + index);
+    }
+}
 
 // const NAMES_SI = ['kilogram', 'meter', 'second', 'coulomb', 'kelvin', 'mole', 'candela'];
 var SYMBOLS_SI = ['kg', 'm', 's', 'C', 'K', 'mol', 'cd'];
@@ -5693,7 +5693,10 @@ var Geometric3 = (function () {
     return Geometric3;
 }());
 
+exports.Dimensions = Dimensions;
 exports.Geometric3 = Geometric3;
+exports.QQ = QQ;
+exports.Unit = Unit;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
