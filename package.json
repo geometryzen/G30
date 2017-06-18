@@ -1,6 +1,6 @@
 {
   "name": "space-algebra",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A TypeScript library implementing the Geometric Algebra of 3D space with optional Units of Measure.",
   "author": {
     "name": "David Geo Holmes",
@@ -9,7 +9,7 @@
   "browser": "./build/browser/index.js",
   "main": "./build/main/index.js",
   "module": "./build/module/index.js",
-  "types": "./build/browser/index.d.ts",
+  "types": "./build/module/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git://github.com/geometryzen/space-algebra.git"

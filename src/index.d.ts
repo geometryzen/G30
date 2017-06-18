@@ -1437,3 +1437,236 @@ export class Geometric3 implements CartesianG3, GeometricE3 {
      */
     static wedge(a: Geometric3, b: Geometric3): Geometric3;
 }
+
+/**
+ * A mutable representation of a spinor with cartesian coordinates in 3 dimensions.
+ */
+export class Spinor3 implements SpinorE3, CartesianG3 {
+    /**
+     * The scalar coordinate of the spinor.
+     */
+    a: number;
+    /**
+     * The coordinate corresponding to the bivector e2 ^ e3.
+     */
+    yz: number;
+    /**
+     * The coordinate corresponding to the bivector e3 ^ e1.
+     */
+    zx: number;
+    /**
+     * The coordinate corresponding to the bivector e1 ^ e2.
+     */
+    xy: number;
+    /**
+     *
+     */
+    uom: Unit;
+    /**
+     *
+     */
+    constructor(a: number, yz: number, zx: number, xy: number, uom?: Unit);
+    /**
+     *
+     */
+    maskG3: number;
+    /**
+     *
+     */
+    copy(spinor: SpinorE3): this;
+    /**
+     *
+     */
+    divByScalar(alpha: number): this;
+    /**
+     *
+     */
+    isOne(): boolean;
+    /**
+     *
+     */
+    magnitude(): number;
+    /**
+     *
+     */
+    normalize(): this;
+    /**
+     *
+     */
+    one(): this;
+    /**
+     * a.k.a. squared norm
+     */
+    private quaditude();
+    /**
+     *
+     */
+    rev(): this;
+    /**
+     *
+     */
+    toExponential(fractionDigits?: number): string;
+    /**
+     *
+     */
+    toFixed(fractionDigits?: number): string;
+    /**
+     *
+     */
+    toPrecision(precision?: number): string;
+    /**
+     * Returns a string representation of this spinor.
+     */
+    toString(radix?: number): string;
+    /**
+     * <p>
+     * Computes a unit spinor with a random direction.
+     * </p>
+     */
+    static random(): Spinor3;
+    /**
+     * @param yz
+     * @param zx
+     * @param xy
+     * @param α
+     */
+    static spinor(yz: number, zx: number, xy: number, α: number, uom?: Unit): Spinor3;
+}
+
+export class Vector3 implements VectorE3, CartesianG3 {
+    x: number;
+    y: number;
+    z: number;
+    uom: Unit;
+    /**
+     *
+     */
+    constructor(x: number, y: number, z: number, uom?: Unit);
+    /**
+     *
+     */
+    maskG3: number;
+    /**
+     *
+     */
+    add(rhs: VectorE3): this;
+    /**
+     * Pre-multiplies the column vector corresponding to this vector by the matrix.
+     * The result is applied to this vector.
+     *
+     * @param σ The 3x3 matrix that pre-multiplies this column vector.
+     */
+    applyMatrix(σ: MatrixLike): this;
+    /**
+     *
+     */
+    clone(): Vector3;
+    /**
+     *
+     */
+    copy(source: VectorE3): this;
+    /**
+     *
+     */
+    direction(): this;
+    /**
+     *
+     */
+    divByScalar(alpha: number): this;
+    /**
+     *
+     */
+    dot(v: VectorE3): number;
+    /**
+     *
+     */
+    dual(B: BivectorE3): this;
+    isZero(): boolean;
+    /**
+     *
+     */
+    magnitude(): number;
+    /**
+     *
+     */
+    mulByScalar(alpha: number): this;
+    neg(): this;
+    /**
+     *
+     */
+    normalize(magnitude?: number): this;
+    /**
+     *
+     */
+    write(destination: VectorE3): this;
+    /**
+     *
+     */
+    zero(): this;
+    /**
+     * Computes the square of this vector.
+     * This is an alias for the `squaredNorm` method.
+     */
+    quaditude(): number;
+    /**
+     *
+     */
+    quadranceTo(point: VectorE3): number;
+    /**
+     *
+     */
+    rotate(spinor: SpinorE3): this;
+    /**
+     * Computes the square of this vector.
+     * This is an alias for the `quaditude` method.
+     */
+    squaredNorm(): number;
+    /**
+     *
+     */
+    sub(rhs: VectorE3): this;
+    /**
+     * Returns a string containing a number in exponential notation.
+     */
+    toExponential(fractionDigits?: number): string;
+    /**
+     * Returns a string containing a number in fixed-point notation.
+     */
+    toFixed(fractionDigits?: number): string;
+    /**
+     * Returns a string containing a number represented either in exponential or fixed-point notation
+     * with a specified number of digits.
+     */
+    toPrecision(precision?: number): string;
+    /**
+     * Returns a string representation of this vector.
+     */
+    toString(radix?: number): string;
+    __add__(rhs: VectorE3): Vector3;
+    __div__(rhs: number): Vector3;
+    __mul__(rhs: number): Vector3;
+    __neg__(): Vector3;
+    __radd__(lhs: VectorE3): Vector3;
+    __rmul__(lhs: number): Vector3;
+    __rsub__(lhs: VectorE3): Vector3;
+    __sub__(rhs: VectorE3): Vector3;
+    /**
+     * Constructs a vector by computing the dual of a bivector.
+     */
+    static dual(B: BivectorE3): Vector3;
+    /**
+     * <p>
+     * Computes a unit vector with a random direction.
+     * </p>
+     */
+    static random(): Vector3;
+    /**
+     * @param x
+     * @param y
+     * @param z
+     * @param uom
+     */
+    static vector(x: number, y: number, z: number, uom?: Unit): Vector3;
+}
+
+
