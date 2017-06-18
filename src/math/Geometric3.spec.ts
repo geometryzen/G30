@@ -1,8 +1,6 @@
 import { Geometric3 } from './Geometric3';
 import { BivectorE3 } from './BivectorE3';
-import { Spinor3 } from './Spinor3';
 import { Unit } from './Unit';
-import { Vector3 } from './Vector3';
 import { VectorE3 } from './VectorE3';
 
 const one = Geometric3.one;
@@ -998,7 +996,7 @@ describe("Geometric3", function () {
     });
 
     describe("reflect", function () {
-        const n = Vector3.vector(1, 0, 0);
+        const n = Geometric3.vector(1, 0, 0);
         const a = Geometric3.vector(2, 3, 0, Unit.METER);
         const chain = a.reflect(n);
 
@@ -1067,7 +1065,7 @@ describe("Geometric3", function () {
     });
 
     describe("stress", function () {
-        const stress = Vector3.vector(7, 11, 13);
+        const stress = Geometric3.vector(7, 11, 13);
         const position = Geometric3.vector(2, 3, 5, Unit.METER);
         const chain = position.stress(stress);
 
@@ -1115,10 +1113,16 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Vector3)", function () {
+        describe("(Geometric3, Vector3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Vector3.random();
+            const r = Geometric3.random();
+            r.a = 0;
+            r.xy = 0;
+            r.yz = 0;
+            r.zx = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromVector(r);
             const a = l.__add__(r);
             const b = lhG.clone().add(rhG);
@@ -1147,10 +1151,15 @@ describe("Geometric3", function () {
                 expect(a.b).toBe(b.b);
             });
         });
-        describe("(Geomtric3, Spinor3)", function () {
+        describe("(Geometric3, Spinor3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Spinor3.random();
+            const r = Geometric3.random();
+            r.x = 0;
+            r.y = 0;
+            r.z = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromSpinor(r);
             const a = l.__add__(r);
             const b = lhG.clone().add(rhG);
@@ -1247,10 +1256,16 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Vector3)", function () {
+        describe("(Geometric3, Vector3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Vector3.random();
+            const r = Geometric3.random();
+            r.a = 0;
+            r.xy = 0;
+            r.yz = 0;
+            r.zx = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromVector(r);
             const a = l.__sub__(r);
             const b = lhG.clone().sub(rhG);
@@ -1280,10 +1295,15 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Spinor3)", function () {
+        describe("(Geometric3, Spinor3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Spinor3.random();
+            const r = Geometric3.random();
+            r.x = 0;
+            r.y = 0;
+            r.z = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromSpinor(r);
             const a = l.__sub__(r);
             const b = lhG.clone().sub(rhG);
@@ -1381,10 +1401,16 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Vector3)", function () {
+        describe("(Geometric3, Vector3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Vector3.random();
+            const r = Geometric3.random();
+            r.a = 0;
+            r.xy = 0;
+            r.yz = 0;
+            r.zx = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromVector(r);
             const a = l.__mul__(r);
             const b = lhG.clone().mul(rhG);
@@ -1414,10 +1440,15 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Spinor3)", function () {
+        describe("(Geometric3, Spinor3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Spinor3.random();
+            const r = Geometric3.random();
+            r.x = 0;
+            r.y = 0;
+            r.z = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromSpinor(r);
             const a = l.__mul__(r);
             const b = lhG.clone().mul(rhG);
@@ -1515,10 +1546,16 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Vector3)", function () {
+        describe("(Geometric3, Vector3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Vector3.random();
+            const r = Geometric3.random();
+            r.a = 0;
+            r.xy = 0;
+            r.yz = 0;
+            r.zx = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromVector(r);
             const a = l.__div__(r);
             const b = lhG.clone().div(rhG);
@@ -1548,10 +1585,15 @@ describe("Geometric3", function () {
             });
         });
 
-        describe("(Geomtric3, Spinor3)", function () {
+        describe("(Geometric3, Spinor3)", function () {
             const l = Geometric3.random();
             const lhG = l.clone();
-            const r = Spinor3.random();
+            const r = Geometric3.random();
+            r.x = 0;
+            r.y = 0;
+            r.z = 0;
+            r.b = 0;
+            r.normalize();
             const rhG = Geometric3.fromSpinor(r);
             const a = l.__div__(r);
             const b = lhG.clone().div(rhG);
